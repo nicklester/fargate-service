@@ -507,6 +507,10 @@ Resources:
         - !Ref 'AWS::NoValue'
       - Name: app
         Image: !Ref AppImage
+        Ulimits:
+        - Name: 'nofile'
+          SoftLimit: 2048
+          HardLimit: 2048
         RepositoryCredentials: !If [HasAppImageSecretModule, {CredentialsParameter: {'Fn::ImportValue': !Sub '${AppImageSecretModule}-Arn'}}, !Ref 'AWS::NoValue']
         PortMappings:
         - !If [HasProxyImage, {ContainerPort: !Ref AppPort, Protocol: tcp}, !If [HasTargetModule, {ContainerPort: !Ref AppPort, Protocol: tcp}, !Ref 'AWS::NoValue']]
