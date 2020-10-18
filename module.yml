@@ -268,6 +268,9 @@ Parameters:
     Default: 60
     MinValue: 0
     MaxValue: 1800
+  InterContainerSg:
+    Type: String
+    Default: ''
 Mappings:
   CpuMap:
     '0.25':
@@ -379,6 +382,7 @@ Conditions:
   HasSidecarEnvironment1Secret: !And [!Not [!Equals [!Ref SidecarEnvironment1Key, '']], !Not [!Equals [!Ref SidecarEnvironment1SecretModule, '']]]
   HasSidecarEnvironment2Secret: !And [!Not [!Equals [!Ref SidecarEnvironment2Key, '']], !Not [!Equals [!Ref SidecarEnvironment2SecretModule, '']]]
   HasSidecarEnvironment3Secret: !And [!Not [!Equals [!Ref SidecarEnvironment3Key, '']], !Not [!Equals [!Ref SidecarEnvironment3SecretModule, '']]]
+  HasInterContainerSg: !Not [!Equals [!Ref InterContainerSg, '']]
 Resources:
   Cluster:
     Condition: HasNotClusterModule
@@ -503,6 +507,10 @@ Resources:
         - !Ref 'AWS::NoValue'
       - Name: app
         Image: !Ref AppImage
+        Ulimits:
+        - Name: 'nofile'
+          SoftLimit: 2048
+          HardLimit: 2048
         RepositoryCredentials: !If [HasAppImageSecretModule, {CredentialsParameter: {'Fn::ImportValue': !Sub '${AppImageSecretModule}-Arn'}}, !Ref 'AWS::NoValue']
         PortMappings:
         - !If [HasProxyImage, {ContainerPort: !Ref AppPort, Protocol: tcp}, !If [HasTargetModule, {ContainerPort: !Ref AppPort, Protocol: tcp}, !Ref 'AWS::NoValue']]
@@ -589,6 +597,7 @@ Resources:
           - !If [HasClientSgModule1, {'Fn::ImportValue': !Sub '${ClientSgModule1}-SecurityGroupId'}, !Ref 'AWS::NoValue']
           - !If [HasClientSgModule2, {'Fn::ImportValue': !Sub '${ClientSgModule2}-SecurityGroupId'}, !Ref 'AWS::NoValue']
           - !If [HasClientSgModule3, {'Fn::ImportValue': !Sub '${ClientSgModule3}-SecurityGroupId'}, !Ref 'AWS::NoValue']
+          - !If [HasInterContainerSg, !Ref InterContainerSg, !Ref 'AWS::NoValue']
           Subnets: !Split [',', {'Fn::ImportValue': !Sub '${VpcModule}-SubnetIds${SubnetsReach}'}]
       TaskDefinition: !Ref TaskDefinition
   ServiceFailedNotification:
